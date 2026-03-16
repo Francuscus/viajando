@@ -8,25 +8,24 @@ interface DirectionHUDProps {
 
 const DirectionHUD = ({ onChoose, disabled }: DirectionHUDProps) => {
   return (
-    <div className="flex flex-col items-center gap-2">
-      <p className="text-sm font-display font-bold text-primary mb-1">
-        ¿Qué dirección tomas?
-      </p>
-      <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
-        {DIRECTION_OPTIONS.map((opt) => (
-          <Button
-            key={opt.direction}
-            variant="direction"
-            size="lg"
-            disabled={disabled}
-            onClick={() => onChoose(opt.direction)}
-            className="flex flex-col h-auto py-3 gap-0.5"
-          >
-            <span className="text-xl">{opt.icon}</span>
-            <span className="text-xs leading-tight">{opt.labelEs}</span>
-          </Button>
-        ))}
-      </div>
+    <div className="flex items-center gap-1.5 bg-card/90 backdrop-blur rounded-xl px-3 py-2 shadow-lg border border-border/50">
+      <span className="text-[10px] font-display font-bold text-muted-foreground mr-1 hidden sm:block">
+        ¿Dirección?
+      </span>
+      {DIRECTION_OPTIONS.map((opt) => (
+        <Button
+          key={opt.direction}
+          variant="direction"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onChoose(opt.direction)}
+          className="flex flex-col h-auto py-1.5 px-2 gap-0 min-w-[3rem]"
+          title={opt.labelEs}
+        >
+          <span className="text-base leading-none">{opt.icon}</span>
+          <span className="text-[9px] leading-tight mt-0.5 hidden sm:block">{opt.labelEs.split(' ').slice(-1)[0]}</span>
+        </Button>
+      ))}
     </div>
   );
 };

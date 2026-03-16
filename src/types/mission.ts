@@ -10,6 +10,15 @@ export interface MissionStop {
   hint: string;
   location: LatLng;
   answer: string;
+  directions?: string; // Professor's written directions for students
+}
+
+export interface StartingPlace {
+  id: string;
+  name: string;
+  nameEs: string;
+  emoji: string;
+  location: LatLng;
 }
 
 export interface Mission {
@@ -19,6 +28,7 @@ export interface Mission {
   center: LatLng;
   zoom: number;
   stops: MissionStop[];
+  startingPlaces: StartingPlace[];
 }
 
 export type Direction = 'left' | 'right' | 'straight' | 'back';

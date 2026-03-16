@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MissionStop, LatLng, Mission } from '@/types/mission';
+import { MissionStop, LatLng, Mission, StartingPlace } from '@/types/mission';
 import { SAMPLE_MISSION } from '@/data/sampleMission';
 import QuestionCard from '@/components/QuestionCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Play, MapPin, ArrowLeft } from 'lucide-react';
+import { Plus, Play, MapPin, ArrowLeft, Navigation, Trash2 } from 'lucide-react';
 
 const ProfessorDashboard = () => {
   const navigate = useNavigate();
@@ -14,7 +14,15 @@ const ProfessorDashboard = () => {
   const [newQuestion, setNewQuestion] = useState('');
   const [newQuestionEs, setNewQuestionEs] = useState('');
   const [newHint, setNewHint] = useState('');
+  const [newDirections, setNewDirections] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<LatLng | null>(null);
+
+  // Starting places form state
+  const [newPlaceName, setNewPlaceName] = useState('');
+  const [newPlaceNameEs, setNewPlaceNameEs] = useState('');
+  const [newPlaceEmoji, setNewPlaceEmoji] = useState('📍');
+  const [newPlaceLat, setNewPlaceLat] = useState('');
+  const [newPlaceLng, setNewPlaceLng] = useState('');
 
   const handleAddStop = () => {
     if (!newQuestion || !newQuestionEs) return;
@@ -24,6 +32,7 @@ const ProfessorDashboard = () => {
       question: newQuestion,
       questionEs: newQuestionEs,
       hint: newHint || 'No hint provided',
+      directions: newDirections || undefined,
       location: selectedLocation || {
         lat: mission.center.lat + (Math.random() - 0.5) * 0.005,
         lng: mission.center.lng + (Math.random() - 0.5) * 0.005,
@@ -38,6 +47,7 @@ const ProfessorDashboard = () => {
     setNewQuestion('');
     setNewQuestionEs('');
     setNewHint('');
+    setNewDirections('');
     setSelectedLocation(null);
   };
 
@@ -45,6 +55,42 @@ const ProfessorDashboard = () => {
     setMission((prev) => ({
       ...prev,
       stops: prev.stops.filter((s) => s.id !== id),
+    }));
+  };
+
+  const handleAddStartingPlace = () => {
+    if (!newPlaceName || !newPlaceNameEs) return;
+    if (mission.startingPlaces.length >= 4) return;
+
+    const lat = parseFloat(newPlaceLat);
+    const lng = parseFloat(newPlaceLng);
+
+    const newPlace: StartingPlace = {
+      id: `start-${Date.now()}`,
+      name: newPlaceName,
+      nameEs: newPlaceNameEs,
+      emoji: newPlaceEmoji || '📍',
+      location: {
+        lat: isNaN(lat) ? mission.center.lat + (Math.random() - 0.5) * 0.003 : lat,
+        lng: isNaN(lng) ? mission.center.lng + (Math.random() - 0.5) * 0.003 : lng,
+      },
+    };
+
+    setMission((prev) => ({
+      ...prev,
+      startingPlaces: [...prev.startingPlaces, newPlace],
+    }));
+    setNewPlaceName('');
+    setNewPlaceNameEs('');
+    setNewPlaceEmoji('📍');
+    setNewPlaceLat('');
+    setNewPlaceLng('');
+  };
+
+  const handleRemoveStartingPlace = (id: string) => {
+    setMission((prev) => ({
+      ...prev,
+      startingPlaces: prev.startingPlaces.filter((p) => p.id !== id),
     }));
   };
 
@@ -70,7 +116,7 @@ const ProfessorDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Questions */}
+        {/* Left: Questions & Settings */}
         <div className="space-y-4">
           {/* Mission info */}
           <Card>
@@ -97,7 +143,123 @@ const ProfessorDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Add question */}
+          {/* Starting Places */}
+          <Card>
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-base font-display flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                Lugares de Inicio
+                <span className="text-xs font-body font-normal text-muted-foreground ml-auto">
+                  {mission.startingPlaces.length}/4
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-2 space-y-3">
+              {/* Existing starting places */}
+              {mission.startingPlaces.length > 0 && (
+                <div className="space-y-2">
+                  {mission.startingPlaces.map((place, i) => (
+                    <div
+                      key={place.id}
+                      className="flex items-center gap-2 p-2 bg-muted rounded-lg"
+                    >
+                      <span className="text-xl">{place.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-display font-bold text-foreground truncate">
+                          {place.nameEs}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-body truncate">
+                          {place.name} — {place.location.lat.toFixed(4)}, {place.location.lng.toFixed(4)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveStartingPlace(place.id)}
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new starting place */}
+              {mission.startingPlaces.length < 4 && (
+                <div className="space-y-2 pt-1">
+                  <p className="text-xs text-muted-foreground font-body">
+                    Añade hasta 4 lugares donde los estudiantes pueden comenzar (al hacer clic, el mapa hace zoom a esa ubicación).
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-body text-muted-foreground mb-1 block">Nombre (ES)</label>
+                      <Input
+                        placeholder="Plaza Central"
+                        value={newPlaceNameEs}
+                        onChange={(e) => setNewPlaceNameEs(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-body text-muted-foreground mb-1 block">Name (EN)</label>
+                      <Input
+                        placeholder="Central Square"
+                        value={newPlaceName}
+                        onChange={(e) => setNewPlaceName(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs font-body text-muted-foreground mb-1 block">Emoji</label>
+                      <Input
+                        placeholder="📍"
+                        value={newPlaceEmoji}
+                        onChange={(e) => setNewPlaceEmoji(e.target.value)}
+                        className="text-xs text-center"
+                        maxLength={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-body text-muted-foreground mb-1 block">Latitud</label>
+                      <Input
+                        placeholder="41.3833"
+                        value={newPlaceLat}
+                        onChange={(e) => setNewPlaceLat(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-body text-muted-foreground mb-1 block">Longitud</label>
+                      <Input
+                        placeholder="2.1777"
+                        value={newPlaceLng}
+                        onChange={(e) => setNewPlaceLng(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddStartingPlace}
+                    disabled={!newPlaceName || !newPlaceNameEs}
+                    className="w-full"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Añadir lugar de inicio
+                  </Button>
+                </div>
+              )}
+              {mission.startingPlaces.length === 0 && (
+                <p className="text-xs text-muted-foreground font-body text-center py-2">
+                  Sin lugares de inicio todavía.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Add stop */}
           <Card>
             <CardHeader className="p-4 pb-2">
               <CardTitle className="text-base font-display flex items-center gap-2">
@@ -128,6 +290,19 @@ const ProfessorDashboard = () => {
                   placeholder="Look for the large spires..."
                   value={newHint}
                   onChange={(e) => setNewHint(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-body text-muted-foreground mb-1 block flex items-center gap-1">
+                  <Navigation className="h-3 w-3" />
+                  Indicaciones para el estudiante (opcional)
+                </label>
+                <textarea
+                  placeholder="Head north from the main square. Look for the tall stone spires..."
+                  value={newDirections}
+                  onChange={(e) => setNewDirections(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                 />
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -178,8 +353,9 @@ const ProfessorDashboard = () => {
               <p className="text-sm text-muted-foreground font-body mb-4 max-w-xs">
                 Add a Google Maps API key to enable interactive map for placing mission stops.
               </p>
-              {/* Show pins on a simple grid for demo */}
-              <div className="w-full max-w-sm bg-card rounded-lg p-4 border space-y-2">
+              {/* Stops list */}
+              <div className="w-full max-w-sm bg-card rounded-lg p-4 border space-y-2 mb-4">
+                <p className="text-xs font-display font-bold text-muted-foreground mb-2">Paradas</p>
                 {mission.stops.map((stop, i) => (
                   <div
                     key={stop.id}
@@ -188,10 +364,32 @@ const ProfessorDashboard = () => {
                     <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-display font-bold shrink-0">
                       {i + 1}
                     </span>
-                    <span className="truncate">{stop.questionEs}</span>
+                    <span className="truncate flex-1">{stop.questionEs}</span>
+                    {stop.directions && (
+                      <Navigation className="h-3 w-3 text-primary shrink-0" title="Has directions" />
+                    )}
                   </div>
                 ))}
+                {mission.stops.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Sin paradas</p>
+                )}
               </div>
+
+              {/* Starting places list */}
+              {mission.startingPlaces.length > 0 && (
+                <div className="w-full max-w-sm bg-card rounded-lg p-4 border space-y-2">
+                  <p className="text-xs font-display font-bold text-muted-foreground mb-2">Lugares de inicio</p>
+                  {mission.startingPlaces.map((place) => (
+                    <div
+                      key={place.id}
+                      className="flex items-center gap-2 text-xs font-body text-foreground"
+                    >
+                      <span className="text-base">{place.emoji}</span>
+                      <span className="truncate">{place.nameEs}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
         </div>
