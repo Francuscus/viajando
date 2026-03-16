@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+console.log('API_KEY present:', !!API_KEY, 'length:', API_KEY.length);
 
 const StudentMission = () => {
   const navigate = useNavigate();
