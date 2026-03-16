@@ -4,7 +4,7 @@ import { SAMPLE_MISSION } from '@/data/sampleMission';
 import { Direction, LatLng } from '@/types/mission';
 import TourProgressBar from '@/components/TourProgressBar';
 import TaskCard from '@/components/TaskCard';
-import DirectionHUD from '@/components/DirectionHUD';
+import DirectionHUD from '@/components/directionHUD';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import MockStreetView from '@/components/MockStreetView';
 import StreetViewExplorer from '@/components/StreetViewExplorer';
