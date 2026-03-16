@@ -11,7 +11,7 @@ import StreetViewExplorer from '@/components/StreetViewExplorer';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-const API_KEY = ''; // User must add their Google Maps API key
+const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 const StudentMission = () => {
   const navigate = useNavigate();
