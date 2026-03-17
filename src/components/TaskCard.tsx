@@ -1,7 +1,7 @@
 import { MissionStop } from '@/types/mission';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Lightbulb } from 'lucide-react';
+import { MapPin, Lightbulb, Navigation } from 'lucide-react';
 import { useState } from 'react';
 
 interface TaskCardProps {
@@ -14,6 +14,7 @@ interface TaskCardProps {
 
 const TaskCard = ({ stop, stopNumber, totalStops, onFound, showDirections }: TaskCardProps) => {
   const [showHint, setShowHint] = useState(false);
+  const [showDirectionsText, setShowDirectionsText] = useState(false);
 
   return (
     <Card className="shadow-xl border-0 bg-card/95 backdrop-blur-sm">
@@ -34,6 +35,14 @@ const TaskCard = ({ stop, stopNumber, totalStops, onFound, showDirections }: Tas
             <p className="text-xs text-muted-foreground font-body">
               {stop.question}
             </p>
+            {stop.directions && showDirectionsText && (
+              <div className="mt-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
+                <p className="text-xs font-body text-foreground flex items-start gap-1.5">
+                  <Navigation className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                  {stop.directions}
+                </p>
+              </div>
+            )}
             {showHint && (
               <p className="text-xs text-warning mt-2 flex items-center gap-1">
                 <Lightbulb className="h-3 w-3" />
@@ -51,6 +60,17 @@ const TaskCard = ({ stop, stopNumber, totalStops, onFound, showDirections }: Tas
               <MapPin className="h-3 w-3 mr-1" />
               ¡Encontrado!
             </Button>
+            {stop.directions && !showDirectionsText && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDirectionsText(true)}
+                className="text-xs text-primary"
+              >
+                <Navigation className="h-3 w-3 mr-1" />
+                Indicaciones
+              </Button>
+            )}
             {!showHint && (
               <Button
                 variant="ghost"
