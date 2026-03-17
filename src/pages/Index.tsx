@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, GraduationCap, BookOpen, Navigation } from 'lucide-react';
+import { APP_VERSION } from '@/version';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Index = () => {
           <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-1.5 mb-6">
             <Navigation className="h-4 w-4 text-primary" />
             <span className="text-sm font-display font-bold text-primary">CaminaConmigo</span>
+            <span className="text-xs font-mono text-primary/60">{APP_VERSION}</span>
           </div>
 
           <h1 className="text-4xl md:text-5xl font-display font-extrabold text-foreground mb-4 leading-tight">
@@ -70,6 +72,47 @@ const Index = () => {
               <Icon className="h-6 w-6 text-primary mx-auto mb-2" />
               <p className="font-display font-bold text-xs text-foreground">{label}</p>
               <p className="text-[10px] text-muted-foreground font-body">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Changelog */}
+      <div className="w-full max-w-lg mx-auto mt-12 px-4 pb-4">
+        <h3 className="text-xs font-display font-bold text-muted-foreground uppercase tracking-widest mb-3 text-center">
+          Changelog
+        </h3>
+        <div className="space-y-2">
+          {[
+            {
+              version: 'v1.4',
+              label: 'City sync fix',
+              desc: 'Map click now updates the city automatically; "Nueva misión" button clears sample data; student falls back to map center when no stops exist.',
+            },
+            {
+              version: 'v1.3',
+              label: 'City sync',
+              desc: 'Professor missions save automatically; students see the configured city and choose a starting place.',
+            },
+            {
+              version: 'v1.2',
+              label: 'Map picker',
+              desc: 'Professors click the map to place stops and starting places instead of entering coordinates by hand.',
+            },
+            {
+              version: 'v1.1',
+              label: 'Direction controls',
+              desc: 'Navigation HUD moved to the top bar; camera capture added; professors can write per-stop directions.',
+            },
+          ].map(({ version, label, desc }) => (
+            <div key={version} className="flex items-start gap-3 text-left">
+              <span className="shrink-0 font-mono text-[10px] font-bold text-primary bg-primary/10 rounded px-1.5 py-0.5 mt-0.5">
+                {version}
+              </span>
+              <div>
+                <span className="text-xs font-display font-bold text-foreground">{label} </span>
+                <span className="text-xs text-muted-foreground font-body">{desc}</span>
+              </div>
             </div>
           ))}
         </div>

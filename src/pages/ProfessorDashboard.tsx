@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MissionStop, LatLng, Mission, StartingPlace } from '@/types/mission';
 import { SAMPLE_MISSION } from '@/data/sampleMission';
@@ -7,13 +7,25 @@ import MapPicker from '@/components/MapPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Play, MapPin, ArrowLeft, Navigation, Trash2 } from 'lucide-react';
+import { Plus, Play, MapPin, ArrowLeft, Navigation, Trash2, RefreshCw } from 'lucide-react';
+import { APP_VERSION } from '@/version';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const STORAGE_KEY = 'viajando_mission';
+
+function loadMission(): Mission {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return JSON.parse(stored) as Mission;
+  } catch {
+    // ignore parse errors
+  }
+  return SAMPLE_MISSION;
+}
 
 const ProfessorDashboard = () => {
   const navigate = useNavigate();
-  const [mission, setMission] = useState<Mission>(SAMPLE_MISSION);
+  const [mission, setMission] = useState<Mission>(loadMission);
   const [newQuestion, setNewQuestion] = useState('');
   const [newQuestionEs, setNewQuestionEs] = useState('');
   const [newHint, setNewHint] = useState('');
@@ -26,6 +38,19 @@ const ProfessorDashboard = () => {
   const [newPlaceEmoji, setNewPlaceEmoji] = useState('📍');
   const [newPlaceLat, setNewPlaceLat] = useState('');
   const [newPlaceLng, setNewPlaceLng] = useState('');
+
+  // Persist mission to localStorage on every change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mission));
+  }, [mission]);
+
+  // Auto-fill lat/lng fields when professor clicks on the map
+  useEffect(() => {
+    if (selectedLocation) {
+      setNewPlaceLat(selectedLocation.lat.toFixed(6));
+      setNewPlaceLng(selectedLocation.lng.toFixed(6));
+    }
+  }, [selectedLocation]);
 
   const handleAddStop = () => {
     if (!newQuestion || !newQuestionEs) return;
@@ -97,6 +122,19 @@ const ProfessorDashboard = () => {
     }));
   };
 
+  const handleNewMission = () => {
+    const blank: Mission = {
+      id: `mission-${Date.now()}`,
+      title: 'Nueva Misión',
+      neighborhood: '',
+      center: mission.center, // keep current map position
+      zoom: 17,
+      stops: [],
+      startingPlaces: [],
+    };
+    setMission(blank);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -108,13 +146,21 @@ const ProfessorDashboard = () => {
             </Button>
             <div>
               <h1 className="font-display font-bold text-lg text-foreground">Panel del Profesor</h1>
-              <p className="text-xs text-muted-foreground font-body">Crea y gestiona misiones</p>
+              <p className="text-xs text-muted-foreground font-body">
+                Crea y gestiona misiones · <span className="font-mono">{APP_VERSION}</span>
+              </p>
             </div>
           </div>
-          <Button variant="default" size="lg" onClick={() => navigate('/student')}>
-            <Play className="h-4 w-4 mr-2" />
-            Previsualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleNewMission}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Nueva misión
+            </Button>
+            <Button variant="default" size="lg" onClick={() => navigate('/student')}>
+              <Play className="h-4 w-4 mr-2" />
+              Previsualizar
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -142,6 +188,28 @@ const ProfessorDashboard = () => {
                   onChange={(e) => setMission((prev) => ({ ...prev, neighborhood: e.target.value }))}
                   className="font-body"
                 />
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex-1 text-xs font-body text-muted-foreground">
+                  Centro:{' '}
+                  <span className="font-mono text-foreground">
+                    {mission.center.lat.toFixed(4)}, {mission.center.lng.toFixed(4)}
+                  </span>
+                </div>
+                {selectedLocation && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => {
+                      setMission((prev) => ({ ...prev, center: selectedLocation }));
+                      setSelectedLocation(null);
+                    }}
+                  >
+                    <Navigation className="h-3 w-3 mr-1" />
+                    Usar punto seleccionado como centro
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -355,7 +423,12 @@ const ProfessorDashboard = () => {
                 center={mission.center}
                 stops={mission.stops}
                 startingPlaces={mission.startingPlaces}
-                onLocationSelect={(pos) => setSelectedLocation(pos)}
+                onLocationSelect={(pos) => {
+                  setSelectedLocation(pos);
+                  // Every click updates the mission center so student always
+                  // starts near where the professor is working
+                  setMission((prev) => ({ ...prev, center: pos }));
+                }}
                 apiKey={API_KEY}
               />
             ) : (

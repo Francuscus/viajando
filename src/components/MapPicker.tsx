@@ -1,12 +1,6 @@
 /// <reference types="google.maps" />
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { LatLng, MissionStop, StartingPlace } from '@/types/mission';
-
-declare global {
-  interface Window {
-    google: typeof google;
-  }
-}
 
 interface MapPickerProps {
   center: LatLng;
@@ -16,6 +10,35 @@ interface MapPickerProps {
   apiKey: string;
 }
 
+// Module-level promise so we only load the script once
+let mapsLoadPromise: Promise<void> | null = null;
+
+function loadGoogleMaps(apiKey: string): Promise<void> {
+  if (mapsLoadPromise) return mapsLoadPromise;
+
+  if (window.google?.maps?.Map) {
+    mapsLoadPromise = Promise.resolve();
+    return mapsLoadPromise;
+  }
+
+  mapsLoadPromise = new Promise<void>((resolve, reject) => {
+    const callbackName = '__googleMapsReady';
+    (window as Record<string, unknown>)[callbackName] = () => {
+      resolve();
+      delete (window as Record<string, unknown>)[callbackName];
+    };
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=streetview&callback=${callbackName}`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => reject(new Error('Failed to load Google Maps'));
+    document.head.appendChild(script);
+  });
+
+  return mapsLoadPromise;
+}
+
 const MapPicker = ({ center, stops, startingPlaces, onLocationSelect, apiKey }: MapPickerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -23,30 +46,18 @@ const MapPicker = ({ center, stops, startingPlaces, onLocationSelect, apiKey }: 
   const startMarkersRef = useRef<google.maps.Marker[]>([]);
   const pendingMarkerRef = useRef<google.maps.Marker | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const onLocationSelectRef = useRef(onLocationSelect);
+  onLocationSelectRef.current = onLocationSelect;
 
-  // Load the Google Maps JS API
   useEffect(() => {
-    if (window.google?.maps) {
-      setLoaded(true);
-      return;
-    }
-
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => setLoaded(true));
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=streetview`;
-    script.async = true;
-    script.onload = () => setLoaded(true);
-    document.head.appendChild(script);
+    loadGoogleMaps(apiKey)
+      .then(() => setLoaded(true))
+      .catch((e) => setError(e.message));
   }, [apiKey]);
 
-  // Init map
-  useEffect(() => {
-    if (!loaded || !containerRef.current) return;
+  const initMap = useCallback(() => {
+    if (!containerRef.current || mapRef.current) return;
 
     const map = new window.google.maps.Map(containerRef.current, {
       center,
@@ -55,15 +66,20 @@ const MapPicker = ({ center, stops, startingPlaces, onLocationSelect, apiKey }: 
       fullscreenControl: false,
       streetViewControl: false,
       mapTypeControl: false,
+      zoomControlOptions: {
+        position: window.google.maps.ControlPosition.RIGHT_TOP,
+      },
     });
 
     mapRef.current = map;
+
+    // Force layout recalc so tiles load correctly
+    window.google.maps.event.trigger(map, 'resize');
 
     map.addListener('click', (e: google.maps.MapMouseEvent) => {
       if (!e.latLng) return;
       const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
 
-      // Show a temporary pending marker
       if (pendingMarkerRef.current) pendingMarkerRef.current.setMap(null);
       pendingMarkerRef.current = new window.google.maps.Marker({
         position: pos,
@@ -78,13 +94,14 @@ const MapPicker = ({ center, stops, startingPlaces, onLocationSelect, apiKey }: 
         },
       });
 
-      onLocationSelect(pos);
+      onLocationSelectRef.current(pos);
     });
+  }, []);
 
-    return () => {
-      window.google.maps.event.clearInstanceListeners(map);
-    };
-  }, [loaded]);
+  useEffect(() => {
+    if (!loaded) return;
+    initMap();
+  }, [loaded, initMap]);
 
   // Sync stop markers
   useEffect(() => {
@@ -147,17 +164,25 @@ const MapPicker = ({ center, stops, startingPlaces, onLocationSelect, apiKey }: 
     }
   }, [center.lat, center.lng, loaded]);
 
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted p-4 text-center">
+        <p className="text-sm text-destructive font-body">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full">
-      <div ref={containerRef} className="w-full h-full" />
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted">
           <p className="text-muted-foreground font-body text-sm">Loading map…</p>
         </div>
       )}
       {loaded && (
-        <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs font-body text-muted-foreground shadow">
-          Click anywhere on the map to set a stop location
+        <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs font-body text-gray-600 shadow pointer-events-none">
+          Click anywhere to set a stop location
         </div>
       )}
     </div>
