@@ -85,9 +85,14 @@ const Index = () => {
         <div className="space-y-2">
           {[
             {
+              version: 'v1.5',
+              label: 'City picker',
+              desc: 'Professor selects city from a dropdown (Buenos Aires, Madrid, etc.); mission saves synchronously before student preview loads.',
+            },
+            {
               version: 'v1.4',
               label: 'City sync fix',
-              desc: 'Map click now updates the city automatically; "Nueva misión" button clears sample data; student falls back to map center when no stops exist.',
+              desc: 'Map click updates the city automatically; "Nueva misión" clears sample data; student falls back to map center when no stops exist.',
             },
             {
               version: 'v1.3',

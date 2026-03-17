@@ -10,6 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Play, MapPin, ArrowLeft, Navigation, Trash2, RefreshCw } from 'lucide-react';
 import { APP_VERSION } from '@/version';
 
+const CITY_PRESETS = [
+  { label: 'Buenos Aires, Argentina', neighborhood: 'Buenos Aires', center: { lat: -34.6037, lng: -58.3816 } },
+  { label: 'Barcelona, España',       neighborhood: 'Barcelona',    center: { lat: 41.3833,  lng: 2.1777  } },
+  { label: 'Madrid, España',          neighborhood: 'Madrid',       center: { lat: 40.4168,  lng: -3.7038 } },
+  { label: 'México D.F., México',     neighborhood: 'Ciudad de México', center: { lat: 19.4326, lng: -99.1332 } },
+  { label: 'Lima, Perú',              neighborhood: 'Lima',         center: { lat: -12.0464, lng: -77.0428 } },
+  { label: 'Bogotá, Colombia',        neighborhood: 'Bogotá',       center: { lat: 4.7110,   lng: -74.0721 } },
+  { label: 'Santiago, Chile',         neighborhood: 'Santiago',     center: { lat: -33.4489, lng: -70.6693 } },
+  { label: 'Sevilla, España',         neighborhood: 'Sevilla',      center: { lat: 37.3891,  lng: -5.9845  } },
+];
+
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 const STORAGE_KEY = 'viajando_mission';
 
@@ -156,7 +167,14 @@ const ProfessorDashboard = () => {
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               Nueva misión
             </Button>
-            <Button variant="default" size="lg" onClick={() => navigate('/student')}>
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(mission));
+                navigate('/student');
+              }}
+            >
               <Play className="h-4 w-4 mr-2" />
               Previsualizar
             </Button>
@@ -189,27 +207,32 @@ const ProfessorDashboard = () => {
                   className="font-body"
                 />
               </div>
-              <div className="flex items-center gap-2 pt-1">
-                <div className="flex-1 text-xs font-body text-muted-foreground">
-                  Centro:{' '}
-                  <span className="font-mono text-foreground">
-                    {mission.center.lat.toFixed(4)}, {mission.center.lng.toFixed(4)}
-                  </span>
-                </div>
-                {selectedLocation && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-7"
-                    onClick={() => {
-                      setMission((prev) => ({ ...prev, center: selectedLocation }));
-                      setSelectedLocation(null);
-                    }}
-                  >
-                    <Navigation className="h-3 w-3 mr-1" />
-                    Usar punto seleccionado como centro
-                  </Button>
-                )}
+              <div>
+                <label className="text-xs font-body text-muted-foreground mb-1 block">Ciudad</label>
+                <select
+                  className="w-full text-xs font-body border rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={CITY_PRESETS.find(
+                    (c) =>
+                      Math.abs(c.center.lat - mission.center.lat) < 0.01 &&
+                      Math.abs(c.center.lng - mission.center.lng) < 0.01
+                  )?.label ?? ''}
+                  onChange={(e) => {
+                    const preset = CITY_PRESETS.find((c) => c.label === e.target.value);
+                    if (!preset) return;
+                    setMission((prev) => ({
+                      ...prev,
+                      center: preset.center,
+                      neighborhood: preset.neighborhood,
+                      stops: [],
+                      startingPlaces: [],
+                    }));
+                  }}
+                >
+                  <option value="">— Seleccionar ciudad —</option>
+                  {CITY_PRESETS.map((c) => (
+                    <option key={c.label} value={c.label}>{c.label}</option>
+                  ))}
+                </select>
               </div>
             </CardContent>
           </Card>
