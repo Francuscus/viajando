@@ -113,7 +113,9 @@ const StudentMission = () => {
   const [position, setPosition] = useState<LatLng>(
     mission.startingPlaces.length > 0
       ? mission.startingPlaces[0].location
-      : mission.stops[0].location
+      : mission.stops.length > 0
+      ? mission.stops[0].location
+      : mission.center
   );
   const [heading, setHeading] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'recalculating' | null>(null);

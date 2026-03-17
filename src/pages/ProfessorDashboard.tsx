@@ -7,7 +7,8 @@ import MapPicker from '@/components/MapPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Play, MapPin, ArrowLeft, Navigation, Trash2 } from 'lucide-react';
+import { Plus, Play, MapPin, ArrowLeft, Navigation, Trash2, RefreshCw } from 'lucide-react';
+import { APP_VERSION } from '@/version';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 const STORAGE_KEY = 'viajando_mission';
@@ -121,6 +122,19 @@ const ProfessorDashboard = () => {
     }));
   };
 
+  const handleNewMission = () => {
+    const blank: Mission = {
+      id: `mission-${Date.now()}`,
+      title: 'Nueva Misión',
+      neighborhood: '',
+      center: mission.center, // keep current map position
+      zoom: 17,
+      stops: [],
+      startingPlaces: [],
+    };
+    setMission(blank);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -132,13 +146,21 @@ const ProfessorDashboard = () => {
             </Button>
             <div>
               <h1 className="font-display font-bold text-lg text-foreground">Panel del Profesor</h1>
-              <p className="text-xs text-muted-foreground font-body">Crea y gestiona misiones</p>
+              <p className="text-xs text-muted-foreground font-body">
+                Crea y gestiona misiones · <span className="font-mono">{APP_VERSION}</span>
+              </p>
             </div>
           </div>
-          <Button variant="default" size="lg" onClick={() => navigate('/student')}>
-            <Play className="h-4 w-4 mr-2" />
-            Previsualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleNewMission}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Nueva misión
+            </Button>
+            <Button variant="default" size="lg" onClick={() => navigate('/student')}>
+              <Play className="h-4 w-4 mr-2" />
+              Previsualizar
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -401,7 +423,12 @@ const ProfessorDashboard = () => {
                 center={mission.center}
                 stops={mission.stops}
                 startingPlaces={mission.startingPlaces}
-                onLocationSelect={(pos) => setSelectedLocation(pos)}
+                onLocationSelect={(pos) => {
+                  setSelectedLocation(pos);
+                  // Every click updates the mission center so student always
+                  // starts near where the professor is working
+                  setMission((prev) => ({ ...prev, center: pos }));
+                }}
                 apiKey={API_KEY}
               />
             ) : (
