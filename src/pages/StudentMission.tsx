@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SAMPLE_MISSION } from '@/data/sampleMission';
-import { Direction, LatLng, StartingPlace } from '@/types/mission';
+import { Direction, LatLng, Mission, StartingPlace } from '@/types/mission';
 import TourProgressBar from '@/components/TourProgressBar';
 import TaskCard from '@/components/TaskCard';
 import DirectionHUD from '@/components/directionHUD';
@@ -12,7 +12,16 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Camera, MapPin, X, Download } from 'lucide-react';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-console.log('API_KEY present:', !!API_KEY, 'length:', API_KEY.length);
+
+function loadMission(): Mission {
+  try {
+    const stored = localStorage.getItem('viajando_mission');
+    if (stored) return JSON.parse(stored) as Mission;
+  } catch {
+    // ignore
+  }
+  return SAMPLE_MISSION;
+}
 
 // Draws a simplified snapshot of the current view to a canvas and downloads it
 function downloadSceneSnapshot(
@@ -99,14 +108,18 @@ function downloadSceneSnapshot(
 
 const StudentMission = () => {
   const navigate = useNavigate();
-  const mission = SAMPLE_MISSION;
+  const mission = loadMission();
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
-  const [position, setPosition] = useState<LatLng>(mission.stops[0].location);
+  const [position, setPosition] = useState<LatLng>(
+    mission.startingPlaces.length > 0
+      ? mission.startingPlaces[0].location
+      : mission.stops[0].location
+  );
   const [heading, setHeading] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'recalculating' | null>(null);
   const [showDirections, setShowDirections] = useState(true);
   const [completed, setCompleted] = useState(false);
-  const [showStartingPlaces, setShowStartingPlaces] = useState(false);
+  const [showStartingPlaces, setShowStartingPlaces] = useState(mission.startingPlaces.length > 0);
   const [cameraPrompt, setCameraPrompt] = useState(false);
 
   const currentStop = mission.stops[currentStopIndex];
