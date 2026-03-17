@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { MissionStop, LatLng, Mission, StartingPlace } from '@/types/mission';
 import { SAMPLE_MISSION } from '@/data/sampleMission';
 import QuestionCard from '@/components/QuestionCard';
+import MapPicker from '@/components/MapPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Play, MapPin, ArrowLeft, Navigation, Trash2 } from 'lucide-react';
+
+const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 const ProfessorDashboard = () => {
   const navigate = useNavigate();
@@ -347,50 +350,23 @@ const ProfessorDashboard = () => {
         {/* Right: Map */}
         <div className="lg:sticky lg:top-20 h-[calc(100vh-6rem)]">
           <Card className="h-full overflow-hidden">
-            <div className="h-full bg-muted flex flex-col items-center justify-center p-6 text-center">
-              <MapPin className="h-16 w-16 text-primary/30 mb-4" />
-              <h3 className="font-display font-bold text-foreground mb-2">Mapa del Barrio</h3>
-              <p className="text-sm text-muted-foreground font-body mb-4 max-w-xs">
-                Add a Google Maps API key to enable interactive map for placing mission stops.
-              </p>
-              {/* Stops list */}
-              <div className="w-full max-w-sm bg-card rounded-lg p-4 border space-y-2 mb-4">
-                <p className="text-xs font-display font-bold text-muted-foreground mb-2">Paradas</p>
-                {mission.stops.map((stop, i) => (
-                  <div
-                    key={stop.id}
-                    className="flex items-center gap-2 text-xs font-body text-foreground"
-                  >
-                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-display font-bold shrink-0">
-                      {i + 1}
-                    </span>
-                    <span className="truncate flex-1">{stop.questionEs}</span>
-                    {stop.directions && (
-                      <Navigation className="h-3 w-3 text-primary shrink-0" title="Has directions" />
-                    )}
-                  </div>
-                ))}
-                {mission.stops.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Sin paradas</p>
-                )}
+            {API_KEY ? (
+              <MapPicker
+                center={mission.center}
+                stops={mission.stops}
+                startingPlaces={mission.startingPlaces}
+                onLocationSelect={(pos) => setSelectedLocation(pos)}
+                apiKey={API_KEY}
+              />
+            ) : (
+              <div className="h-full bg-muted flex flex-col items-center justify-center p-6 text-center">
+                <MapPin className="h-16 w-16 text-primary/30 mb-4" />
+                <h3 className="font-display font-bold text-foreground mb-2">Mapa del Barrio</h3>
+                <p className="text-sm text-muted-foreground font-body max-w-xs">
+                  Set <code className="text-xs bg-muted-foreground/20 px-1 rounded">VITE_GOOGLE_MAPS_API_KEY</code> to enable the interactive map.
+                </p>
               </div>
-
-              {/* Starting places list */}
-              {mission.startingPlaces.length > 0 && (
-                <div className="w-full max-w-sm bg-card rounded-lg p-4 border space-y-2">
-                  <p className="text-xs font-display font-bold text-muted-foreground mb-2">Lugares de inicio</p>
-                  {mission.startingPlaces.map((place) => (
-                    <div
-                      key={place.id}
-                      className="flex items-center gap-2 text-xs font-body text-foreground"
-                    >
-                      <span className="text-base">{place.emoji}</span>
-                      <span className="truncate">{place.nameEs}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
           </Card>
         </div>
       </div>
