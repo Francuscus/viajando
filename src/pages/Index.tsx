@@ -85,6 +85,11 @@ const Index = () => {
         <div className="space-y-2">
           {[
             {
+              version: 'v1.6',
+              label: 'Street View + camera fix',
+              desc: 'Professor map shows pegman (Street View control); camera now downloads a real Street View Static API photo instead of icon drawings.',
+            },
+            {
               version: 'v1.5',
               label: 'City picker',
               desc: 'Professor selects city from a dropdown (Buenos Aires, Madrid, etc.); mission saves synchronously before student preview loads.',

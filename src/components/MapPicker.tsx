@@ -64,7 +64,7 @@ const MapPicker = ({ center, stops, startingPlaces, onLocationSelect, apiKey }: 
       zoom: 15,
       mapTypeId: 'roadmap',
       fullscreenControl: false,
-      streetViewControl: false,
+      streetViewControl: true,
       mapTypeControl: false,
       zoomControlOptions: {
         position: window.google.maps.ControlPosition.RIGHT_TOP,

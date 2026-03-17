@@ -23,12 +23,35 @@ function loadMission(): Mission {
   return SAMPLE_MISSION;
 }
 
-// Draws a simplified snapshot of the current view to a canvas and downloads it
-function downloadSceneSnapshot(
+// Downloads a Street View static image via the Google API, falls back to canvas when no key
+async function downloadSceneSnapshot(
   position: LatLng,
   heading: number,
-  stopLabel: string
-): void {
+  stopLabel: string,
+  apiKey: string
+): Promise<void> {
+  if (apiKey) {
+    const url =
+      `https://maps.googleapis.com/maps/api/streetview` +
+      `?size=800x500&location=${position.lat},${position.lng}` +
+      `&heading=${Math.round(heading)}&pitch=0&fov=90&key=${apiKey}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('non-ok');
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `viaje-foto-${Date.now()}.jpg`;
+      link.href = blobUrl;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      return;
+    } catch {
+      // fall through to canvas fallback
+    }
+  }
+
+  // Canvas fallback (no API key)
   const width = 600;
   const height = 400;
   const canvas = document.createElement('canvas');
@@ -37,61 +60,32 @@ function downloadSceneSnapshot(
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Sky gradient
   const skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.55);
   skyGrad.addColorStop(0, '#87CEEB');
   skyGrad.addColorStop(1, '#d0eaf8');
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, width, height * 0.55);
 
-  // Ground
   ctx.fillStyle = '#c8c8c8';
   ctx.fillRect(0, height * 0.55, width, height * 0.45);
 
-  // Road
   ctx.fillStyle = '#a0a0a0';
   const roadY = height * 0.65;
   ctx.fillRect(width * 0.3, roadY, width * 0.4, height - roadY);
 
-  // Road dashes
   ctx.fillStyle = '#f5c518';
   for (let i = 0; i < 3; i++) {
     ctx.fillRect(width / 2 - 4, roadY + 20 + i * 40, 8, 24);
   }
 
-  // Scene label
-  const STREET_SCENES = [
-    { label: 'Calle Mayor', buildings: '🏛️ 🏪 🏠 🏢' },
-    { label: 'Calle del Sol', buildings: '🍽️ ☕ 🏪 🏠' },
-    { label: 'Avenida de la Paz', buildings: '🏥 💊 🏦 🏫' },
-    { label: 'Plaza Central', buildings: '⛪ 🏛️ ⛲ 🌳' },
-  ];
-  const sceneIndex = Math.abs(Math.floor(position.lat * 1000 + position.lng * 1000)) % STREET_SCENES.length;
-  const scene = STREET_SCENES[sceneIndex];
-
-  // Buildings (emoji row)
-  ctx.font = '48px serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(scene.buildings, width / 2, height * 0.52);
-
-  // Street label chip
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.roundRect(12, 12, 160, 30, 6);
-  ctx.fill();
-  ctx.fillStyle = '#1a1a1a';
-  ctx.font = 'bold 13px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(scene.label, 22, 32);
-
-  // Coordinates chip
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.roundRect(12, height - 44, 220, 28, 6);
+  ctx.roundRect(12, height - 44, 260, 28, 6);
   ctx.fill();
   ctx.fillStyle = '#555';
   ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
   ctx.fillText(`${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`, 22, height - 25);
 
-  // Mission stop label
   ctx.fillStyle = 'rgba(0,0,0,0.65)';
   ctx.fillRect(0, height - 26, width, 26);
   ctx.fillStyle = '#fff';
@@ -99,7 +93,6 @@ function downloadSceneSnapshot(
   ctx.textAlign = 'center';
   ctx.fillText(stopLabel, width / 2, height - 9);
 
-  // Trigger download
   const link = document.createElement('a');
   link.download = `viaje-foto-${Date.now()}.png`;
   link.href = canvas.toDataURL('image/png');
@@ -182,9 +175,9 @@ const StudentMission = () => {
     setCameraPrompt(true);
   };
 
-  const handleDownloadPhoto = () => {
+  const handleDownloadPhoto = async () => {
     const stopLabel = `Parada ${currentStopIndex + 1}: ${currentStop.questionEs}`;
-    downloadSceneSnapshot(position, heading, stopLabel);
+    await downloadSceneSnapshot(position, heading, stopLabel, API_KEY);
     setCameraPrompt(false);
   };
 
@@ -319,6 +312,7 @@ const StudentMission = () => {
           <StreetViewExplorer
             position={position}
             onPositionChange={setPosition}
+            onHeadingChange={setHeading}
             apiKey={API_KEY}
           />
         ) : (

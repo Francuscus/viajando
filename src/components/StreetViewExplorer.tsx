@@ -11,10 +11,11 @@ declare global {
 interface StreetViewExplorerProps {
   position: LatLng;
   onPositionChange?: (pos: LatLng) => void;
+  onHeadingChange?: (heading: number) => void;
   apiKey: string;
 }
 
-const StreetViewExplorer = ({ position, onPositionChange, apiKey }: StreetViewExplorerProps) => {
+const StreetViewExplorer = ({ position, onPositionChange, onHeadingChange, apiKey }: StreetViewExplorerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const panoramaRef = useRef<google.maps.StreetViewPanorama | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -59,6 +60,12 @@ const StreetViewExplorer = ({ position, onPositionChange, apiKey }: StreetViewEx
       const pos = pano.getPosition();
       if (pos && onPositionChange) {
         onPositionChange({ lat: pos.lat(), lng: pos.lng() });
+      }
+    });
+
+    pano.addListener('pov_changed', () => {
+      if (onHeadingChange) {
+        onHeadingChange(pano.getPov().heading);
       }
     });
 
